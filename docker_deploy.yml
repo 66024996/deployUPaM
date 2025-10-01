@@ -1,0 +1,49 @@
+---
+- name: Deploy UPaM project as Docker container
+  hosts: local
+  become: true
+  tasks:
+
+    - name: Ensure git is installed
+      apt:
+        name: git
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker is installed
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Ensure pip3 is installed
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Ensure Python Docker module is installed
+      pip:
+        name: docker
+        executable: pip3
+
+    - name: Clone GitHub repository
+      git:
+        repo: 'https://github.com/66024996/UPaM.git'
+        dest: /home/user66024996/deploy/UPaM
+        version: main
+        force: yes
+
+    - name: Build Docker image
+      community.docker.docker_image:
+        build:
+          path: /home/user66024996/deploy/UPaM
+        name: upam_image
+        tag: latest
+
+    - name: Run Docker container
+      community.docker.docker_container:
+        name: upam_container
+        image: upam_image:latest
+        state: started
+        ports:
+          - "8080:8080"
+  
