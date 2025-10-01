@@ -1,49 +1,42 @@
 ---
 - name: Deploy UPaM project as Docker container
-  hosts: local
-  become: true
-  tasks:
+  hosts: localhost
+  connection: local
+  gather_facts: yes
 
+  tasks:
     - name: Ensure git is installed
-      apt:
+      ansible.builtin.package:
         name: git
         state: present
-        update_cache: yes
 
     - name: Ensure Docker is installed
-      apt:
+      ansible.builtin.package:
         name: docker.io
         state: present
 
-    - name: Ensure pip3 is installed
-      apt:
-        name: python3-pip
+    - name: Ensure Python Docker module is installed
+      ansible.builtin.pip:
+        name: docker
         state: present
 
-    - name: Ensure Python Docker module is installed
-      pip:
-        name: docker
-        executable: pip3
-
     - name: Clone GitHub repository
-      git:
+      ansible.builtin.git:
         repo: 'https://github.com/66024996/UPaM.git'
-        dest: /home/user66024996/deploy/UPaM
-        version: main
-        force: yes
+        dest: './UPaM'
+        update: yes
 
-    - name: Build Docker image
+    - name: Build Docker image from UPaM
       community.docker.docker_image:
-        build:
-          path: /home/user66024996/deploy/UPaM
-        name: upam_image
-        tag: latest
+        path: ./UPaM
+        name: upam_app
+        state: present
 
-    - name: Run Docker container
+    - name: Run UPaM container
       community.docker.docker_container:
         name: upam_container
-        image: upam_image:latest
+        image: upam_app
         state: started
-        ports:
-          - "8080:8080"
-  
+        restart_policy: always
+        published_ports:
+          - 8080:80
